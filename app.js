@@ -13,13 +13,14 @@ const CATEGORIES = [
 
 const $ = (s) => document.querySelector(s);
 const STATUS = { none: "안 읽음", reading: "읽는 중", done: "읽음" };
-const SAVED = "pb_saved", NOTES = "pb_notes";
+const SAVED = "pb_saved", NOTES = "pb_notes", KEY = "pb_apikey";
 const SELECT = "id,display_name,publication_year,authorships,cited_by_count,doi,primary_location,best_oa_location,open_access,abstract_inverted_index";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const safeUrl = (u) => (/^https?:\/\//i.test(u || "") ? u : "");
 const enc = encodeURIComponent;
 let results = [], koQuery = "";
 
+const getKey = () => { try { return localStorage.getItem(KEY) || ""; } catch { return ""; } };
 const ls = {
   get(k) { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { toast("이 브라우저에서는 저장이 막혀 있습니다."); } },
@@ -113,12 +114,19 @@ async function search() {
   const q = $("#q").value.trim();
   if (!q) return toast("검색어를 입력하세요.");
   renderExt(q);
+  const key = getKey();
+  if (!key) {
+    $("#keybox").open = true;
+    $("#status").textContent = "";
+    $("#cards").innerHTML = '<div class="empty">먼저 위의 "OpenAlex API 키 설정"에 무료 API 키를 저장해 주세요.<br>그동안은 "다른 사이트에서도 검색" 버튼을 쓸 수 있습니다.</div>';
+    return;
+  }
   const f = [];
   if ($("#oa").checked) f.push("open_access.is_oa:true");
   const y = $("#year").value;
   if (y !== "all") f.push("from_publication_date:" + (new Date().getFullYear() - Number(y)) + "-01-01");
   const s = $("#sort").value;
-  const url = "https://api.openalex.org/works?search=" + enc(q) + "&per-page=25&select=" + SELECT + (f.length ? "&filter=" + f.join(",") : "") + (s ? "&sort=" + s : "");
+  const url = "https://api.openalex.org/works?search=" + enc(q) + "&per-page=25&select=" + SELECT + (f.length ? "&filter=" + f.join(",") : "") + (s ? "&sort=" + s : "") + "&api_key=" + enc(key);
   $("#status").textContent = "검색 중...";
   try {
     const r = await fetch(url);
@@ -128,10 +136,14 @@ async function search() {
     const total = d.meta && d.meta.count != null ? d.meta.count.toLocaleString() : results.length;
     $("#status").textContent = `검색 결과 ${total}건 중 ${results.length}건 표시`;
     $("#cards").innerHTML = results.length ? results.map(card).join("") : '<div class="empty">검색 결과가 없습니다. 영어 검색어로 바꾸거나 "무료 원문만" 체크를 풀어 보세요.</div>';
-  } catch {
+  } catch (err) {
     results = [];
     $("#status").textContent = "";
-    $("#cards").innerHTML = '<div class="empty">검색 서버에 연결하지 못했습니다. 잠시 후 다시 시도하거나 위의 "다른 사이트에서도 검색" 버튼을 사용하세요.</div>';
+    const code = String(err.message);
+    const msg = ["401", "403", "409"].includes(code) ? "API 키가 올바르지 않거나 사용 한도를 넘었습니다. 키를 다시 확인해 주세요."
+      : code === "429" ? "요청이 너무 많습니다. 잠시 후 다시 시도하세요."
+      : "검색 서버에 연결하지 못했습니다. 잠시 후 다시 시도하거나 위의 버튼을 사용하세요.";
+    $("#cards").innerHTML = `<div class="empty">${msg}<br>(오류 코드: ${esc(code)})</div>`;
   }
 }
 
@@ -194,3 +206,13 @@ $("#form").addEventListener("submit", (e) => { e.preventDefault(); search(); });
 /* 시작 */
 $("#chips").innerHTML = CATEGORIES.map((c, i) => `<button type="button" class="chip" data-i="${i}">${esc(c.name)}</button>`).join("");
 renderSaved();
+$("#key").value = getKey();
+$("#keybox").open = !getKey();
+$("#keysave").addEventListener("click", () => {
+  const v = $("#key").value.trim();
+  try {
+    localStorage.setItem(KEY, v);
+    toast(v ? "키를 저장했습니다." : "키를 삭제했습니다.");
+    if (v) $("#keybox").open = false;
+  } catch { toast("이 브라우저에서는 저장이 막혀 있습니다."); }
+});
