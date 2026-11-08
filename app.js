@@ -13,11 +13,12 @@ const CATEGORIES = [
 
 const $ = (s) => document.querySelector(s);
 const STATUS = { none: "안 읽음", reading: "읽는 중", done: "읽음" };
-const SAVED = "pb_saved", NOTES = "pb_notes", KEY = "pb_apikey";
+const SAVED = "pb_saved", NOTES = "pb_notes", KEY = "pb_apikey", TR = "pb_tr";
 const SELECT = "id,display_name,publication_year,authorships,cited_by_count,doi,primary_location,best_oa_location,open_access,abstract_inverted_index";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const safeUrl = (u) => (/^https?:\/\//i.test(u || "") ? u : "");
 const enc = encodeURIComponent;
+const hasKo = (s) => /[가-힣]/.test(s);
 let results = [], koQuery = "";
 
 const getKey = () => { try { return localStorage.getItem(KEY) || ""; } catch { return ""; } };
@@ -27,7 +28,21 @@ const ls = {
 };
 function toast(msg) {
   const t = $("#toast"); t.textContent = msg; t.classList.add("show");
-  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 1800);
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+/* 제목 번역 (MyMemory 무료 번역, 버튼 누를 때만 사용) */
+const koLine = (p) => { const t = ls.get(TR)[p.id]; return t ? `<p class="ko">${esc(t)}</p>` : ""; };
+async function translate(p) {
+  const cache = ls.get(TR);
+  if (cache[p.id]) return cache[p.id];
+  const r = await fetch("https://api.mymemory.translated.net/get?q=" + enc(p.title.slice(0, 400)) + "&langpair=en|ko");
+  if (!r.ok) throw new Error(r.status);
+  const d = await r.json();
+  const t = d.responseData && d.responseData.translatedText;
+  if (!t || Number(d.responseStatus) !== 200 || /MYMEMORY WARNING/i.test(t)) throw new Error("limit");
+  cache[p.id] = t; ls.set(TR, cache);
+  return t;
 }
 
 /* OpenAlex 결과를 화면용 형태로 변환 */
@@ -88,12 +103,14 @@ function card(p) {
   return `<article class="card" data-id="${esc(p.id)}">
     <span class="tag ${free ? "" : "paid"}">${free ? "무료 원문 있음" : "무료 원문 확인 필요"}</span>
     <h2>${esc(p.title)}</h2>
+    ${koLine(p)}
     <div class="meta"><span>${esc(p.year || "연도 확인 필요")}</span><span>${esc(au || "저자 확인 필요")}</span><span>인용 ${p.cites == null ? "확인 필요" : esc(p.cites) + "회"}</span></div>
     <div class="actions">
       ${pdf ? `<a class="btn primary" href="${esc(pdf)}" target="_blank" rel="noopener noreferrer">PDF 읽기 ↗</a>`
         : oa ? `<a class="btn primary" href="${esc(oa)}" target="_blank" rel="noopener noreferrer">무료 원문 보기 ↗</a>`
         : `<span class="btn off" aria-disabled="true">무료 PDF 없음</span>`}
       ${src ? `<a class="btn" href="${esc(src)}" target="_blank" rel="noopener noreferrer">출처 확인 ↗</a>` : `<span class="btn off" aria-disabled="true">출처 확인 필요</span>`}
+      ${!hasKo(p.title) && !ls.get(TR)[p.id] ? '<button class="btn" data-act="tr">제목 번역</button>' : ""}
       <button class="btn" data-act="save">${saved ? "저장됨 ✓" : "저장"}</button>
       <button class="btn" data-act="apa">APA 복사</button>
       ${p.abstract ? `<button class="btn more" data-act="more" aria-expanded="false">초록 보기 +</button>` : ""}
@@ -123,6 +140,8 @@ async function search() {
   }
   const f = [];
   if ($("#oa").checked) f.push("open_access.is_oa:true");
+  const lang = $("#lang").value;
+  if (lang !== "all") f.push("language:" + lang);
   const y = $("#year").value;
   if (y !== "all") f.push("from_publication_date:" + (new Date().getFullYear() - Number(y)) + "-01-01");
   const s = $("#sort").value;
@@ -166,7 +185,7 @@ document.addEventListener("click", (e) => {
   if (chip) {
     const c = CATEGORIES[chip.dataset.i];
     document.querySelectorAll(".chip").forEach((x) => x.classList.toggle("on", x === chip));
-    $("#q").value = c.en; koQuery = c.ko; search();
+    $("#q").value = $("#lang").value === "ko" ? c.ko : c.en; koQuery = c.ko; search();
     return;
   }
   const btn = e.target.closest("[data-act]"); if (!btn) return;
@@ -176,6 +195,15 @@ document.addEventListener("click", (e) => {
     const a = el.querySelector(".abs"), open = a.hidden;
     a.hidden = !open; btn.setAttribute("aria-expanded", open);
     btn.textContent = open ? "초록 접기 −" : "초록 보기 +";
+  } else if (btn.dataset.act === "tr") {
+    btn.disabled = true; btn.textContent = "번역 중...";
+    translate(p).then((t) => {
+      if (!el.querySelector(".ko")) el.querySelector("h2").insertAdjacentHTML("afterend", `<p class="ko">${esc(t)}</p>`);
+      btn.remove();
+    }).catch(() => {
+      btn.disabled = false; btn.textContent = "제목 번역";
+      toast("번역 한도에 도달했거나 연결에 실패했습니다. 잠시 후 또는 내일 다시 시도하세요.");
+    });
   } else if (btn.dataset.act === "save") {
     const all = ls.get(SAVED);
     if (all[p.id]) { delete all[p.id]; toast("저장함에서 뺐습니다."); } else { all[p.id] = p; toast("저장했습니다."); }
@@ -215,4 +243,27 @@ $("#keysave").addEventListener("click", () => {
     toast(v ? "키를 저장했습니다." : "키를 삭제했습니다.");
     if (v) $("#keybox").open = false;
   } catch { toast("이 브라우저에서는 저장이 막혀 있습니다."); }
+});
+$("#lang").addEventListener("change", () => {
+  const on = document.querySelector(".chip.on");
+  if (on) {
+    const c = CATEGORIES[on.dataset.i];
+    $("#q").value = $("#lang").value === "ko" ? c.ko : c.en;
+  }
+  if ($("#q").value.trim()) search();
+});
+$("#trall").addEventListener("click", async () => {
+  const btn = $("#trall"); btn.disabled = true;
+  let n = 0;
+  for (const el of document.querySelectorAll("#cards .card")) {
+    const p = find(el.dataset.id);
+    if (!p || hasKo(p.title) || el.querySelector(".ko")) continue;
+    try {
+      const t = await translate(p);
+      el.querySelector("h2").insertAdjacentHTML("afterend", `<p class="ko">${esc(t)}</p>`);
+      const b = el.querySelector('[data-act="tr"]'); if (b) b.remove();
+      btn.textContent = `번역 중... (${++n}편)`;
+    } catch { toast("번역 한도에 도달했거나 연결에 실패했습니다."); break; }
+  }
+  btn.disabled = false; btn.textContent = "이 결과 제목 모두 번역";
 });
