@@ -41,10 +41,18 @@
           <option value="10">최근 10년</option>
         </select>
         <button class="btn primary" type="submit">검색</button>
-        <label class="oa"><input type="checkbox" id="oa"> 무료 원문만</label>
+        <div class="oa">
+          논문 언어
+          <select id="lang" class="langsel" aria-label="논문 언어">
+            <option value="all">전체</option>
+            <option value="ko">한국어</option>
+            <option value="en">영어</option>
+          </select>
+          <label><input type="checkbox" id="oa"> 무료 원문만</label>
+        </div>
       </form>
       <div id="ext" class="ext"></div>
-      <p id="status" class="count"></p>
+      <div class="statusrow"><p id="status" class="count"></p><button type="button" class="btn" id="trall">이 결과 제목 모두 번역</button></div>
       <div id="cards"><div class="empty">위에서 주제를 고르거나 검색어를 입력해 보세요.</div></div>
     </section>
 
