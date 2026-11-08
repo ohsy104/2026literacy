@@ -20,11 +20,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .toolbar{display:grid;grid-template-columns:1fr 130px 130px auto;gap:10px;align-items:center}
 .toolbar input[type=search],.toolbar select{padding:14px;border:1px solid var(--line);border-radius:12px;font:inherit;background:var(--card)}
 .oa{grid-column:1/-1;font-size:.88rem;color:var(--sub)}
+.toolbar .langsel{padding:6px 10px;border-radius:8px;margin:0 14px 0 4px}
 .ext{margin:14px 0 6px;font-size:.85rem;color:var(--sub);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .ext a{color:var(--ink);background:var(--soft);border:1px solid var(--line);padding:5px 12px;border-radius:99px;text-decoration:none;font-weight:600}
+.statusrow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .count{font-size:.85rem;color:var(--sub);margin:8px 0 12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-bottom:16px}
 .card h2{font-size:1.1rem;margin:0 0 6px}
+.ko{color:var(--hi);margin:0 0 8px;font-size:.95rem;font-weight:600}
 .meta{font-size:.85rem;color:var(--sub)}.meta span{margin-right:14px}
 .tag{display:inline-block;font-size:.75rem;font-weight:700;padding:2px 9px;border-radius:6px;background:#d9f0c8;color:#1f5a0a;margin-bottom:8px}
 .tag.paid{background:#eee6bd;color:var(--sub)}
