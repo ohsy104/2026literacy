@@ -3,42 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>논문 정리 보드</title>
+  <title>컴퓨터교육석사 논문검색</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="wrap">
-    <h1 id="title">논문 정리 보드</h1>
-    <p id="desc" class="desc"></p>
+    <h1>컴퓨터교육석사 논문검색</h1>
+    <p class="desc">주제를 고르거나 직접 검색하면 논문 목록과 무료 원문(PDF) 링크를 바로 보여줍니다. 유료 논문은 출처 페이지로 연결됩니다.</p>
 
     <div class="tabs" role="tablist">
-      <button class="tab active" data-tab="list" role="tab">논문 목록 <span class="badge" id="b-list">0편</span></button>
-      <button class="tab" data-tab="compare" role="tab">유사 연구 비교표 <span class="badge" id="b-compare">0편</span></button>
-      <button class="tab" data-tab="diff" role="tab">내 연구 차별화 방안 <span class="badge" id="b-diff">0개</span></button>
+      <button class="tab active" data-tab="search" role="tab">논문 검색</button>
+      <button class="tab" data-tab="saved" role="tab">저장함 <span class="badge" id="b-saved">0편</span></button>
     </div>
 
-    <section id="panel-list">
-      <div class="toolbar">
-        <input id="q" type="search" placeholder="제목, 저자, 연구 대상·내용 검색" aria-label="검색">
-        <select id="sim" aria-label="유사도 필터">
-          <option value="all">유사도 전체</option>
-          <option value="very">매우 유사</option>
-          <option value="moderate">적당히 유사</option>
-          <option value="indirect">간접 관련</option>
-        </select>
+    <section id="panel-search">
+      <nav class="chips" id="chips" aria-label="주제 분류"></nav>
+      <form id="form" class="toolbar">
+        <input id="q" type="search" placeholder="검색어 (영어가 결과가 가장 많습니다)" aria-label="검색어">
         <select id="sort" aria-label="정렬">
-          <option value="sim">유사도순</option>
-          <option value="year">최신순</option>
-          <option value="cite">인용순</option>
+          <option value="">관련도순</option>
+          <option value="publication_date:desc">최신순</option>
+          <option value="cited_by_count:desc">인용순</option>
         </select>
-      </div>
-      <p class="legend"><b>매우 유사</b> 도구와 비판적 판단이 직접 연결 &nbsp; <b>적당히 유사</b> AI 이해·평가의 인접 연구 &nbsp; <b>간접 관련</b> 수업 설계·배경 참고</p>
-      <p id="count" class="count"></p>
-      <div id="cards"></div>
+        <select id="year" aria-label="발행 시기">
+          <option value="all">전체 기간</option>
+          <option value="3">최근 3년</option>
+          <option value="5">최근 5년</option>
+          <option value="10">최근 10년</option>
+        </select>
+        <button class="btn primary" type="submit">검색</button>
+        <label class="oa"><input type="checkbox" id="oa"> 무료 원문만</label>
+      </form>
+      <div id="ext" class="ext"></div>
+      <p id="status" class="count"></p>
+      <div id="cards"><div class="empty">위에서 주제를 고르거나 검색어를 입력해 보세요.</div></div>
     </section>
 
-    <section id="panel-compare" hidden></section>
-    <section id="panel-diff" hidden></section>
+    <section id="panel-saved" hidden><div id="saved"></div></section>
   </main>
   <div id="toast" class="toast" role="status"></div>
   <script src="app.js"></script>
