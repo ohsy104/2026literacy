@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>논문 정리 보드</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="wrap">
+    <h1 id="title">논문 정리 보드</h1>
+    <p id="desc" class="desc"></p>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="list" role="tab">논문 목록 <span class="badge" id="b-list">0편</span></button>
+      <button class="tab" data-tab="compare" role="tab">유사 연구 비교표 <span class="badge" id="b-compare">0편</span></button>
+      <button class="tab" data-tab="diff" role="tab">내 연구 차별화 방안 <span class="badge" id="b-diff">0개</span></button>
+    </div>
+
+    <section id="panel-list">
+      <div class="toolbar">
+        <input id="q" type="search" placeholder="제목, 저자, 연구 대상·내용 검색" aria-label="검색">
+        <select id="sim" aria-label="유사도 필터">
+          <option value="all">유사도 전체</option>
+          <option value="very">매우 유사</option>
+          <option value="moderate">적당히 유사</option>
+          <option value="indirect">간접 관련</option>
+        </select>
+        <select id="sort" aria-label="정렬">
+          <option value="sim">유사도순</option>
+          <option value="year">최신순</option>
+          <option value="cite">인용순</option>
+        </select>
+      </div>
+      <p class="legend"><b>매우 유사</b> 도구와 비판적 판단이 직접 연결 &nbsp; <b>적당히 유사</b> AI 이해·평가의 인접 연구 &nbsp; <b>간접 관련</b> 수업 설계·배경 참고</p>
+      <p id="count" class="count"></p>
+      <div id="cards"></div>
+    </section>
+
+    <section id="panel-compare" hidden></section>
+    <section id="panel-diff" hidden></section>
+  </main>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
